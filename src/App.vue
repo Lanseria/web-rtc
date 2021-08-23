@@ -8,6 +8,7 @@
 
   <video autoplay playsinline></video>
   <button @click="handleInit()">Open camera</button>
+  <button @click="handleTakephoto()">Take photo</button>
 
   <div id="errorMsg"></div>
 
@@ -78,8 +79,23 @@ export default defineComponent({
         handleError(e);
       }
     };
+    // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos
+    const handleTakephoto = () => {
+      var context = canvas.getContext("2d");
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+
+        var data = canvas.toDataURL("image/png");
+        photo.setAttribute("src", data);
+      } else {
+        clearphoto();
+      }
+    };
     return {
       handleInit,
+      handleTakephoto,
     };
   },
 });
