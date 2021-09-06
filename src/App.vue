@@ -6,11 +6,14 @@
     <span>getUserMedia</span>
   </h1>
 
-  <video autoplay playsinline></video>
+  <video ref="VideoRef" autoplay playsinline></video>
   <button @click="handleInit()">Open camera</button>
   <button @click="handleTakephoto()">Take photo</button>
+  <button @click="handleUsedemo()">Use demo</button>
 
-  <div id="errorMsg"></div>
+  <div id="errorMsg">
+    <canvas ref="CanvasRef"></canvas>
+  </div>
 
   <p class="warning">
     <strong>Warning:</strong> if you're not using headphones, pressing play will
@@ -37,11 +40,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 
 export default defineComponent({
   name: "App",
   setup() {
+    const VideoRef = ref<HTMLVideoElement>();
+    const CanvasRef = ref<HTMLCanvasElement>();
     const constraints = {
       audio: false,
       video: true,
@@ -75,27 +80,51 @@ export default defineComponent({
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         handleSuccess(stream);
-      } catch (e) {
+      } catch (e: any) {
         handleError(e);
       }
     };
     // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Taking_still_photos
     const handleTakephoto = () => {
-      var context = canvas.getContext("2d");
-      if (width && height) {
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(video, 0, 0, width, height);
-
-        var data = canvas.toDataURL("image/png");
-        photo.setAttribute("src", data);
+      if (CanvasRef.value && VideoRef.value) {
+        const width = VideoRef.value?.videoWidth;
+        const height = VideoRef.value?.videoHeight;
+        const context = CanvasRef.value.getContext("2d");
+        if (width && height) {
+          CanvasRef.value.width = width;
+          CanvasRef.value.height = height;
+          context?.drawImage(VideoRef.value, 0, 0, width, height);
+        } else {
+          console.log(VideoRef.value);
+        }
       } else {
-        clearphoto();
+        console.log(CanvasRef.value, VideoRef.value);
       }
+      // var context = canvas.getContext("2d");
+      // if (width && height) {
+      //   canvas.width = width;
+      //   canvas.height = height;
+      //   context.drawImage(video, 0, 0, width, height);
+      //   var data = canvas.toDataURL("image/png");
+      //   photo.setAttribute("src", data);
+      // } else {
+      //   clearphoto();
+      // }
+    };
+    const handleUsedemo = () => {
+      // f.video.weibocdn.com/000KGDZzgx07PBPYeZe701041201NtlX0E010.mp4
+      if (VideoRef.value) {
+        VideoRef.value.src =
+          "https://www.apple.com.cn/105/media/cn/music/2020/a6a91a55-edb9-4570-a7b7-7af8b0f45e23/anim/hero/large.mp4";
+      }
+      console.log("hello");
     };
     return {
+      VideoRef,
+      CanvasRef,
       handleInit,
       handleTakephoto,
+      handleUsedemo,
     };
   },
 });
