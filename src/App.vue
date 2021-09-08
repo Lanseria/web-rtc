@@ -6,7 +6,7 @@
     <span>getUserMedia</span>
   </h1>
 
-  <video ref="VideoRef" autoplay playsinline></video>
+  <video ref="VideoRef" autoplay playsinline crossorigin="anonymous"></video>
   <button @click="handleInit()">Open camera</button>
   <button @click="handleTakephoto()">Take photo</button>
   <button @click="handleUsedemo()">Use demo</button>
@@ -41,6 +41,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from "vue";
+import { imgCocoReq } from "./api";
 
 export default defineComponent({
   name: "App",
@@ -51,6 +52,7 @@ export default defineComponent({
       audio: false,
       video: true,
     };
+    const outputBoxes = ref<any[]>([]);
     const handleSuccess = (stream: MediaStream) => {
       const video = document.querySelector("video");
       const videoTracks = stream.getVideoTracks();
@@ -90,38 +92,46 @@ export default defineComponent({
         const width = VideoRef.value?.videoWidth;
         const height = VideoRef.value?.videoHeight;
         const context = CanvasRef.value.getContext("2d");
-        if (width && height) {
+        if (width && height && context) {
           CanvasRef.value.width = width;
           CanvasRef.value.height = height;
-          context?.drawImage(VideoRef.value, 0, 0, width, height);
+          context.clearRect(0, 0, width, height);
+          context.drawImage(VideoRef.value, 0, 0, width, height);
+          CanvasRef.value.toBlob(async (blob) => {
+            const formData = new FormData();
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            formData.append("file", blob!);
+            const { data } = await imgCocoReq(formData);
+            outputBoxes.value = data.data.output_boxes;
+            outputBoxes.value.forEach((m: any) => {
+              context.lineWidth = 2;
+              context.strokeStyle = "orange";
+              context.rect(m.x1, m.y1, m.x2 - m.x1, m.y2 - m.y1);
+              context.stroke();
+              context.font = "20px zillaslab";
+              context.fillStyle = "orange";
+              context.fillText(m.obj_score.toFixed(2), m.x1 + 5, m.y1 + 40);
+              context.fillText(m.category, m.x1 + 5, m.y1 + 15);
+            });
+          });
         } else {
           console.log(VideoRef.value);
         }
       } else {
         console.log(CanvasRef.value, VideoRef.value);
       }
-      // var context = canvas.getContext("2d");
-      // if (width && height) {
-      //   canvas.width = width;
-      //   canvas.height = height;
-      //   context.drawImage(video, 0, 0, width, height);
-      //   var data = canvas.toDataURL("image/png");
-      //   photo.setAttribute("src", data);
-      // } else {
-      //   clearphoto();
-      // }
     };
     const handleUsedemo = () => {
       // f.video.weibocdn.com/000KGDZzgx07PBPYeZe701041201NtlX0E010.mp4
       if (VideoRef.value) {
-        VideoRef.value.src =
-          "https://www.apple.com.cn/105/media/cn/music/2020/a6a91a55-edb9-4570-a7b7-7af8b0f45e23/anim/hero/large.mp4";
+        VideoRef.value.src = "/large.mp4";
       }
       console.log("hello");
     };
     return {
       VideoRef,
       CanvasRef,
+      outputBoxes,
       handleInit,
       handleTakephoto,
       handleUsedemo,
